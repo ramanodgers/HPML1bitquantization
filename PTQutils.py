@@ -12,6 +12,22 @@ def quantized_weights(max, min, weights: torch.Tensor) -> Tuple[torch.Tensor, fl
     result = (weights * inv_scale).round() + zero_point
     return torch.clamp(result, min=min, max=max), inv_scale
 
+
+def quantize_layer_weights(max, min, model: nn.Module, device):
+    for name, module in model.named_modules():
+        if hasattr(module, 'weight'):
+            # print(module.__class__.__name__)
+            q_layer_data, scale = quantized_weights(max, min, module.weight.data)
+            q_layer_data = q_layer_data.to(device)
+            module.weight.data = q_layer_data
+            module.weight.scale = scale
+            if (q_layer_data < min).any() or (q_layer_data > max).any():
+                raise Exception("Quantized weights of {} layer include values out of bounds for an 8-bit signed integer".format(name))
+            if (q_layer_data != q_layer_data.round()).any():
+                raise Exception("Quantized weights of {} layer include non-integer values".format(name))
+        # else:
+        #     quantize_layer_weights(max, min, module, device)
+
 def visualize_weights(model, save_path):
     weight_list = []
     for name,layer in list(model.named_modules()):
@@ -29,19 +45,6 @@ def visualize_weights(model, save_path):
     print('saved')
     plt.savefig(save_path)
 
-def quantize_layer_weights(max, min, model: nn.Module, device):
-    for name, module in model.named_modules():
-        if hasattr(module, 'weight'):
-            q_layer_data, scale = quantized_weights(max, min, module.weight.data)
-            q_layer_data = q_layer_data.to(device)
-            module.weight.data = q_layer_data
-            module.weight.scale = scale
-            if (q_layer_data < min).any() or (q_layer_data > max).any():
-                raise Exception("Quantized weights of {} layer include values out of bounds for an 8-bit signed integer".format(name))
-            if (q_layer_data != q_layer_data.round()).any():
-                raise Exception("Quantized weights of {} layer include non-integer values".format(name))
-        # else:
-        #     quantize_layer_weights(max, min, module, device)
 
 #generalized hooking
 def register_activation_profiling_hooks(model: nn.Module):
@@ -87,7 +90,7 @@ def clear_activations(model: nn.Module):
 
 class modelQuantized(nn.Module):
     def __init__(self, max, min, net: nn.Module):
-        super(NetQuantized, self).__init__()
+        super(modelQuantized, self).__init__()
         self.net = net
         self.quantized_layers = []
         self.max = max
