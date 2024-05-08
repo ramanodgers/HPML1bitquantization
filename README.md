@@ -13,14 +13,16 @@ Project Goals:
 * Observe the performance of  models and conclude if Vision models could benefit from 1 bit quantization
 
 ## Repo Outline
-* PTQUtils -
-* 1bitquant.py - Implements Post Quantization Training methods
+* PTQUtils - helper functions for Post-training Quantization
+* PTQ.py - main file to run Post-training Quantization with different CL options
+* quanteval.py - wrapper class that executes Post-training Quantization workflow, called by PTQ.py
+* 1bitquant.py - Deprecated file that implements Post Quantization Training methods 
 * qat.py - Uses BitNet Architecture to implement Quantization Aware Training - trains models from scratch
 * bitlinear.py - Attempt to implementation of BitNet Archinecture
 
 ## Commands to Execute
-* to run post training quantization - ``` python3 1bitquant.py ``` 
-* quantization aware training which trains models from scratch - ``` python3 qat.py ```
+* to run post training quantization - ``` python3 PTQ.py ``` various argparse options as defined in the file, including hf model_path, initial_train, etc. Description can be accessed using argparse help method.
+* quantization aware training which trains models from scratch, run with arguments to select which model and number of epochs - ``` python3 qat.py {vit,deit} {num_epochs} ```
 
 ## Results and Observations
 

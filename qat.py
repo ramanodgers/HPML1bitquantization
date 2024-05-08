@@ -1,3 +1,6 @@
+# Quantization Aware Training (QAT) for Vision Transformers from scratch
+
+
 from transformers import AutoImageProcessor, AutoModelForImageClassification, AutoConfig
 from datasets import load_dataset
 import torch
@@ -7,6 +10,7 @@ from transformers import TrainingArguments, Trainer
 import torch.nn as nn
 from tqdm import tqdm
 from torch.utils.data import DataLoader
+import sys
 
 from PTQutils import *
 
@@ -34,11 +38,30 @@ def compute_metrics(eval_pred):
     return metric.compute(predictions=predictions, references=labels)
 
 def main():
-    #model specific 
-    model_path = "facebook/deit-tiny-patch16-224"
-    # model_path = 'google/vit-base-patch16-224-in21k'
+
+    # Check if command-line arguments are provided
+    if len(sys.argv) > 1:
+        # Access command-line arguments
+        model_arg = sys.argv[1]
+        num_epochs_arg = sys.argv[2] if len(sys.argv) > 2 else None
+
+        # Print the command-line arguments
+        print("Model being trained: ", model_arg)
+        print("Training for: " + num_epochs_arg + " epochs")
+    else:
+        model_path = "facebook/deit-tiny-patch16-224"
+        print("No command-line arguments provided., using default model: ", model_path)
+
+    # loading model architecture
+    if model_arg == "vit":
+        model_path = 'google/vit-base-patch16-224-in21k'
+    elif model_arg == "deit":
+        model_path = "facebook/deit-tiny-patch16-224"
+
+
     model_name = model_path.split('/')[-1]
 
+    # loading model and feature extractor
     feature_extractor = AutoImageProcessor.from_pretrained(model_path)
     transform = get_transform(feature_extractor)
     model = AutoModelForImageClassification.from_pretrained(model_path).train().to(device)
@@ -46,6 +69,7 @@ def main():
     # model =  Net().to(device)  
     output_dir = "./results/" + model_name
 
+    # loading dataset
     train_dataset = train_data.with_transform(transform)
     val_dataset = val_data.with_transform(transform)
     test_dataset = test_data.with_transform(transform)
@@ -57,7 +81,7 @@ def main():
         per_device_eval_batch_size=32,
         evaluation_strategy="epoch",
         save_strategy="epoch",
-        num_train_epochs=2,
+        num_train_epochs=num_epochs_arg if num_epochs_arg else 1,
         lr_scheduler_type="cosine",
         logging_steps=10,
         save_total_limit=2,
@@ -91,7 +115,10 @@ def main():
     visualize_weights(model, './results/before.png')
 
     print("AFTER QUANTIZATION...")
+
+    # Quantizating the model
     replace_linears_in_hf(model)
+
     trainer = Trainer(
         model=model,
         args=training_args,
