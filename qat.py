@@ -81,7 +81,7 @@ def main():
         per_device_eval_batch_size=32,
         evaluation_strategy="epoch",
         save_strategy="epoch",
-        num_train_epochs=2,
+        num_train_epochs=num_epochs_arg if num_epochs_arg else 1,
         lr_scheduler_type="cosine",
         logging_steps=10,
         save_total_limit=2,

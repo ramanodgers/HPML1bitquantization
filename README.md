@@ -22,7 +22,7 @@ Project Goals:
 
 ## Commands to Execute
 * to run post training quantization - ``` python3 PTQ.py ``` various argparse options as defined in the file, including hf model_path, initial_train, etc. Description can be accessed using argparse help method.
-* quantization aware training which trains models from scratch - ``` python3 qat.py ```
+* quantization aware training which trains models from scratch, run with arguments to select which model and number of epochs - ``` python3 qat.py {vit,deit} {num_epochs} ```
 
 ## Results and Observations
 
