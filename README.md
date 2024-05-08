@@ -15,7 +15,7 @@ Study and compare quantization techniques in terms of model performance, through
 
 ## Commands to Execute
 
-## Results
+## Results and Observations
 
 Accuracies from Post Training Quantization. 
 
