@@ -17,3 +17,12 @@ Study and compare quantization techniques in terms of model performance, through
 
 ## Results
 
+![Accuracies from Post Training Quantization](https://github.com/ramanodgers/HPML1bitquantization/blob/main/docs/resultsImages/pqt.png)
+
+![alt text](https://github.com/ramanodgers/HPML1bitquantization/blob/main/docs/resultsImages/qat.png)
+
+![alt text](https://github.com/ramanodgers/HPML1bitquantization/blob/main/docs/resultsImages/storage.png)
+
+
+
+
