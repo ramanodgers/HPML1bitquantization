@@ -48,9 +48,11 @@ class QuantEval():
         if self.workflow.range == 'ternary':
             self.max = 1
             self.min = -1
-        else:
+        elif self.workflow.range == 'int8':
             self.max = 127
             self.min = -128
+        else:
+            raise ValueError('given quantization range not supported by QuantEval')
 
         self.feature_extractor = AutoImageProcessor.from_pretrained(self.workflow.model_path)
         self.model = AutoModelForImageClassification.from_pretrained(self.workflow.model_path).to(device)
@@ -101,6 +103,7 @@ class QuantEval():
         print('\n\nWEIGHTS HAVE BEEN QUANTIZED, TESTING\n\n')
         quantize_layer_weights(self.max, self.min, self.model, self.device)
         visualize_weights(self.model, self.training_args.output_dir + 'weight_q.png')
+        dequant_out(self.max, self.min, self.model)
 
         model2 = self.model
         trainer = Trainer(

@@ -3,6 +3,7 @@ import argparse
 from transformers import TrainingArguments, Trainer
 from quanteval import QuantEval
 import torch 
+import os
 
 
 parser = argparse.ArgumentParser(description="Quantization of Neural Network Models")
@@ -18,7 +19,7 @@ parser.add_argument('--quantize_weight', type=bool, default=True,
                     help='whether to quantize weights')
 parser.add_argument('--quantize_ab', type=bool, default=True, 
                     help='whether to quantize activations and biases')
-parser.add_argument('--range', type=str, default='ternary', 
+parser.add_argument('--range', type=str, default='ternary', choices=['ternary', 'int8'],
                     help='which quantization to use')
 
 workflow = parser.parse_args()
@@ -37,9 +38,9 @@ def main():
     # output_dir = "./results/" + model_name
 
     #config, trainset, freeze
-    model_name = workflow['model_path'].split('/')[-1]
-    output_dir = "./results/" + model_name
- 
+    model_name = workflow.model_path.split('/')[-1]
+    output_dir = os.path.join("./results/", model_name, workflow.range) + '/'
+    
     training_args = TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=32,

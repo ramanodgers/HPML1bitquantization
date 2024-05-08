@@ -12,11 +12,15 @@ def quantized_weights(max, min, weights: torch.Tensor) -> Tuple[torch.Tensor, fl
     result = (weights * inv_scale).round() + zero_point
     return torch.clamp(result, min=min, max=max), inv_scale
 
+def dequant_out(max,min,model: nn.Module):
+    def output_hook(module, input, output):
+        output = output/ module.weight.scale
+        return output
+    model.classifier.register_forward_hook(output_hook)
 
 def quantize_layer_weights(max, min, model: nn.Module, device):
     for name, module in model.named_modules():
-        if hasattr(module, 'weight'):
-            # print(module.__class__.__name__)
+        if hasattr(module, 'weight')  :
             q_layer_data, scale = quantized_weights(max, min, module.weight.data)
             q_layer_data = q_layer_data.to(device)
             module.weight.data = q_layer_data
@@ -25,8 +29,7 @@ def quantize_layer_weights(max, min, model: nn.Module, device):
                 raise Exception("Quantized weights of {} layer include values out of bounds for an 8-bit signed integer".format(name))
             if (q_layer_data != q_layer_data.round()).any():
                 raise Exception("Quantized weights of {} layer include non-integer values".format(name))
-        # else:
-        #     quantize_layer_weights(max, min, module, device)
+
 
 def visualize_weights(model, save_path):
     weight_list = []
