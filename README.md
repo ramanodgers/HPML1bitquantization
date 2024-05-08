@@ -21,6 +21,7 @@ Project Goals:
 * bitlinear.py - Attempt to implementation of BitNet Archinecture
 
 ## Commands to Execute
+**Make sure to login to huggingface using "huggingface-cli login" to access the imagenet dataset**
 * to run post training quantization - ``` python3 PTQ.py ``` various argparse options as defined in the file, including hf model_path, initial_train, etc. Description can be accessed using argparse help method.
 * quantization aware training which trains models from scratch, run with arguments to select which model and number of epochs - ``` python3 qat.py {vit,deit} {num_epochs} ```
 
