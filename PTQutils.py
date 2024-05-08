@@ -4,20 +4,30 @@ from typing import Tuple, List
 import numpy as np 
 import matplotlib.pyplot as plt
 
-def quantized_weights(max, min, weights: torch.Tensor) -> Tuple[torch.Tensor, float]:
+def quantized_weights(max, min, symmetric, weights: torch.Tensor) -> Tuple[torch.Tensor, float]:
+    #returns quantized weights, supporting both symmetric and asymettric.
     inv_scale = (max-min) / (torch.max(weights)-torch.min(weights))
-    zero_point = (min-torch.min(weights)*inv_scale).round()
-    # zero_point = 0
+    if symmetric:
+        zero_point = 0
+    else:
+        zero_point = (min-torch.min(weights)*inv_scale).round()
 
     result = (weights * inv_scale).round() + zero_point
     return torch.clamp(result, min=min, max=max), inv_scale
 
+def dequant_out(max,min,model: nn.Module):
+    # Dequantize model output for more accurate loss metrics. 
+    # Magnitude is irrelevant for classification
+    def output_hook(module, input, output):
+        output = output/ module.weight.scale
+        return output
+    model.classifier.register_forward_hook(output_hook)
 
-def quantize_layer_weights(max, min, model: nn.Module, device):
+def quantize_layer_weights(max, min, model: nn.Module, device, symmetric):
+    # quantizes evrery layer and tests for integrity 
     for name, module in model.named_modules():
-        if hasattr(module, 'weight'):
-            # print(module.__class__.__name__)
-            q_layer_data, scale = quantized_weights(max, min, module.weight.data)
+        if hasattr(module, 'weight')  :
+            q_layer_data, scale = quantized_weights(max, min, symmetric, module.weight.data)
             q_layer_data = q_layer_data.to(device)
             module.weight.data = q_layer_data
             module.weight.scale = scale
@@ -25,10 +35,10 @@ def quantize_layer_weights(max, min, model: nn.Module, device):
                 raise Exception("Quantized weights of {} layer include values out of bounds for an 8-bit signed integer".format(name))
             if (q_layer_data != q_layer_data.round()).any():
                 raise Exception("Quantized weights of {} layer include non-integer values".format(name))
-        # else:
-        #     quantize_layer_weights(max, min, module, device)
+
 
 def visualize_weights(model, save_path):
+    #plots weights of a model 
     weight_list = []
     for name,layer in list(model.named_modules()):
         if hasattr(layer, 'weight'):
@@ -41,12 +51,12 @@ def visualize_weights(model, save_path):
     plt.xlabel('Values')
     plt.ylabel('Frequency')
 
-    # Show the plot
     print('saved')
     plt.savefig(save_path)
 
 
-#generalized hooking
+# generalized hooking
+# profiling now only stores the max and min values to sharply reduce storage in memory.
 def register_activation_profiling_hooks(model: nn.Module):
     model.profile_activations = True
     found_first = False
@@ -74,13 +84,12 @@ def register_activation_profiling_hooks(model: nn.Module):
                     module.activation_bounds[0] = min
                 if max > module.activation_bounds[1]:
                     module.activation_bounds[1] = max
-                # module.activations.append(activation)
 
         return hook
 
     for name, layer in model.named_modules():
         if isinstance(layer, (nn.Conv2d, nn.Linear)):
-            if not found_first: #pick a deit layer here and see what the input is in the input hook 
+            if not found_first:
                 found_first = True
                 layer.register_forward_pre_hook(input_hook)
             layer.register_forward_hook(activation_hook(layer))
@@ -88,7 +97,11 @@ def register_activation_profiling_hooks(model: nn.Module):
 def clear_activations(model: nn.Module):
     model.profile_activations = False
 
+
 class modelQuantized(nn.Module):
+    '''
+    Wrapper class for full PTQ models
+    '''
     def __init__(self, max, min, net: nn.Module):
         super(modelQuantized, self).__init__()
         self.net = net
@@ -102,14 +115,13 @@ class modelQuantized(nn.Module):
             self.register_pre_hooks(module)
             if isinstance(module, (nn.Conv2d, nn.Linear)):
                 self.quantized_layers.append(module)
-                # self.register_pre_hooks(module)
 
         self.input_activation_bounds = net.input_activation_bounds
         self.input_scale = self.quantize_initial_input(self.input_activation_bounds)
         self.setup_output_scales()
 
     def register_pre_hooks(self, module):
-        # Define and register a forward pre-hook
+        #activation quantization pre hook
         def pre_hook(layer, input):
             output_scale = getattr(layer, 'output_scale', 1)
             x = input[0]

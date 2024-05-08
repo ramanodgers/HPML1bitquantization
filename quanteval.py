@@ -17,6 +17,7 @@ import torchvision
 from PTQutils import *
    
 def get_transform(feature_extractor, imagenet = True):
+    ''' returns transform functions for each dataset'''
 
     def transform(examples):
         inputs = feature_extractor(examples["image"], return_tensors="pt")
@@ -35,12 +36,18 @@ def get_transform(feature_extractor, imagenet = True):
 
 metric = evaluate.load("accuracy")
 def compute_metrics(eval_pred):
+    ''' typical hf accuracy metric function'''
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)
  
  
 class QuantEval():
+    '''
+    This class holds the workflow state and executes all forms of quantization set in the workflow object
+    It prints what the class is doing when it is executing, and also saves relevant weight plots.
+    '''
+
     def __init__(self, training_args, device, workflow):
         self.training_args = training_args
         self.workflow = workflow
@@ -48,9 +55,11 @@ class QuantEval():
         if self.workflow.range == 'ternary':
             self.max = 1
             self.min = -1
-        else:
+        elif self.workflow.range == 'int8':
             self.max = 127
             self.min = -128
+        else:
+            raise ValueError('given quantization range not supported by QuantEval')
 
         self.feature_extractor = AutoImageProcessor.from_pretrained(self.workflow.model_path)
         self.model = AutoModelForImageClassification.from_pretrained(self.workflow.model_path).to(device)
@@ -68,10 +77,12 @@ class QuantEval():
             self.training_args.train_batch_size * self.training_args.gradient_accumulation_steps * self.training_args.world_size
         )
 
-        self.training_args.learning_rate = base_learning_rate * total_train_batch_size / 256
+        self.training_args.learning_rate = base_learning_rate * total_train_batch_size / 128
         print("Set learning rate to:", self.training_args.learning_rate)
 
     def conduct_workflow(self):
+        ''' This is the primary method used to run all other quantization tasis.'''
+
         if self.workflow.initial_train:
             self.initial_train()
         if self.workflow.quantize_weight or self.workflow.quantize_ab:
@@ -81,6 +92,9 @@ class QuantEval():
         return self.model
         
     def initial_train(self):
+        ''' 
+        lightly trains a model before it is quantized to get fair scores
+        '''
         print("\n\nINITIAL TRAINING AND EVAL\n\n")
         trainer = Trainer(
             model=self.model,
@@ -98,9 +112,13 @@ class QuantEval():
         visualize_weights(self.model, self.training_args.output_dir + 'initial_train.png')
 
     def weight_quantize(self):
+        '''
+        Quantize the weights of layers only
+        '''
         print('\n\nWEIGHTS HAVE BEEN QUANTIZED, TESTING\n\n')
-        quantize_layer_weights(self.max, self.min, self.model, self.device)
+        quantize_layer_weights(self.max, self.min, self.model, self.device, self.workflow.symmetric)
         visualize_weights(self.model, self.training_args.output_dir + 'weight_q.png')
+        dequant_out(self.max, self.min, self.model)
 
         model2 = self.model
         trainer = Trainer(
@@ -115,6 +133,9 @@ class QuantEval():
         self.model = model2
 
     def ab_quantize(self):
+        '''
+        Quantizes the models activations and biases by profiling first, then tests performance.
+        '''
         trainer = Trainer(
             model=self.model,
             args=self.training_args,
@@ -146,14 +167,21 @@ class QuantEval():
         trainer.log_metrics("eval", metrics)
         self.model = model3
     
-    @staticmethod
     def get_data(transform, imagenet = True):
         if imagenet:
-            train_data = load_dataset("GATE-engine/mini_imagenet", split='train', trust_remote_code=True).select(range(2000))
+            train_data = load_dataset("GATE-engine/mini_imagenet", split='train', trust_remote_code=True).select(range(20000))
             test_data = load_dataset("GATE-engine/mini_imagenet", split='test', trust_remote_code=True).select(range(2000))
+
+            #using a smaller subset of imagenet for storage and training
+            # all_data  = load_dataset("mrm8488/ImageNet1K-val", trust_remote_code=True).shuffle(seed=42)['train']
+            # train_data  = all_data.select(range(10000))
+            # test_data = all_data.select(range(10000,12000))
+
+            # train_data = load_dataset("imagenet-1k", split='test', trust_remote_code=True).shuffle(seed=42).select(range(20000))
+            # test_data = load_dataset("imagenet-1k", split='val', trust_remote_code=True).shuffle(seed=42).select(range(2000))
         else:
-            train_data = load_dataset("cifar10", split='train', trust_remote_code=True).select(range(10000))
-            test_data = load_dataset("cifar10", split='test', trust_remote_code=True).select(range(2000))
+            train_data = load_dataset("cifar10", split='train', trust_remote_code=True).shuffle(seed=42).select(range(10000))
+            test_data = load_dataset("cifar10", split='test', trust_remote_code=True).shuffle(seed=42).select(range(2000))
         
         train_dataset = train_data.with_transform(transform)
         test_dataset = test_data.with_transform(transform)

@@ -3,6 +3,7 @@ import argparse
 from transformers import TrainingArguments, Trainer
 from quanteval import QuantEval
 import torch 
+import os
 
 
 parser = argparse.ArgumentParser(description="Quantization of Neural Network Models")
@@ -18,8 +19,10 @@ parser.add_argument('--quantize_weight', type=bool, default=True,
                     help='whether to quantize weights')
 parser.add_argument('--quantize_ab', type=bool, default=True, 
                     help='whether to quantize activations and biases')
-parser.add_argument('--range', type=str, default='ternary', 
+parser.add_argument('--range', type=str, default='ternary', choices=['ternary', 'int8'],
                     help='which quantization to use')
+parser.add_argument('--symmetric', type=bool, default=False, 
+                    help='asymmetric or symmetric quantization')
 
 workflow = parser.parse_args()
 
@@ -28,18 +31,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # MIN = -128
 
 def main():
-    #model specific 
-    # cifar = False
-    # model_path = "facebook/deit-tiny-patch16-224"
-    # model_path = "google/vit-base-patch16-224"
+    '''wrapper file to run all PTQ methods. 
+    Provides options in the argparse, passed to QuantEval engine 
+    '''
+    model_name = workflow.model_path.split('/')[-1]
+    output_dir = os.path.join("./results/", model_name, workflow.range) + '/'
 
-    # model_name = model_path.split('/')[-1]
-    # output_dir = "./results/" + model_name
-
-    #config, trainset, freeze
-    model_name = workflow['model_path'].split('/')[-1]
-    output_dir = "./results/" + model_name
- 
     training_args = TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=32,
