@@ -18,7 +18,6 @@ train_data = load_dataset("GATE-engine/mini_imagenet", split='train', trust_remo
 val_data = load_dataset("GATE-engine/mini_imagenet", split='validation', trust_remote_code=True).select(range(2000))
 test_data = load_dataset("GATE-engine/mini_imagenet", split='test', trust_remote_code=True).select(range(2000))
 
-
 def get_transform(feature_extractor):
     def transform(examples):
         inputs = feature_extractor(examples["image"], return_tensors="pt")

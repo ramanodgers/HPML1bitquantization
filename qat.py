@@ -18,6 +18,8 @@ from bitnet import replace_linears_in_hf
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+wandb.init(project="your_project_name", entity="your_username")
+
 #general preliminaries 
 train_data = load_dataset("GATE-engine/mini_imagenet", split='train', trust_remote_code=True).select(range(2000))
 val_data = load_dataset("GATE-engine/mini_imagenet", split='validation', trust_remote_code=True).select(range(2000))
