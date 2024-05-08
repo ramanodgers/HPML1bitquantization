@@ -21,7 +21,7 @@ Project Goals:
 * bitlinear.py - Attempt to implementation of BitNet Archinecture
 
 ## Commands to Execute
-* to run post training quantization - ``` python3 PTQ.py ``` various argparse as defined in the file, including hf model_path, initial_train, etc. Description can be accessed using argparse help method.
+* to run post training quantization - ``` python3 PTQ.py ``` various argparse options as defined in the file, including hf model_path, initial_train, etc. Description can be accessed using argparse help method.
 * quantization aware training which trains models from scratch - ``` python3 qat.py ```
 
 ## Results and Observations
