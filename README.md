@@ -5,15 +5,22 @@ Columbia University High Performance Machine Learning project: 1.58 bit quantiza
 Exploring 1.58 bit optimization in Vision Transformers through different quantization methods
 * Post training quantization - weights and activations are quantized after the model has been trained, only impacts inference
 * Quantization aware training - training the model with quantization constraints from the beginning
-Study and compare quantization techniques in terms of model performance, throughput and model storage
+Study and compare quantization techniques in terms of model performance, throughput and model storage.
+
+Project Goals: 
+* Explore the various ways one bit quantization can be implemented in Vision models through post training and quantization aware training methods
+* Create a Generalized framework to evaluate models through both methods of quantization
+* Observe the performance of  models and conclude if Vision models could benefit from 1 bit quantization
 
 ## Repo Outline
 * PTQUtils -
-* 1bitquant.py - 
-* qat.py - 
-* bitlinear.py - 
+* 1bitquant.py - Implements Post Quantization Training methods
+* qat.py - Uses BitNet Architecture to implement Quantization Aware Training - trains models from scratch
+* bitlinear.py - Attempt to implementation of BitNet Archinecture
 
 ## Commands to Execute
+* to run post training quantization - ``` python3 1bitquant.py ``` 
+* quantization aware training which trains models from scratch - ``` python3 qat.py ```
 
 ## Results and Observations
 
