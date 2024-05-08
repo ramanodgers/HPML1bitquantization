@@ -17,11 +17,36 @@ Study and compare quantization techniques in terms of model performance, through
 
 ## Results
 
+Accuracies from Post Training Quantization. 
+
 ![Accuracies from Post Training Quantization](https://github.com/ramanodgers/HPML1bitquantization/blob/main/docs/resultsImages/pqt.png)
+
+The accuracy of pretrained models before performing any kind of quantization was ~30%
+Assuming this is due to the covariate shifted nature of the Mini ImageNet dataset, we evaluate the quantized models using these scores as baseline. We are concerned only with the difference between the scores of quantized and non-quantized models, and not the absolute scores themselves.
+Implementation of PTQ shows poor results, dropping by around 25%. We observe that quantizing weights and activations between [-1,0,1] leads to model scores dropping drastically.
+
+**************************************************************
+
+Metrics from Quantization Aware Training
 
 ![alt text](https://github.com/ramanodgers/HPML1bitquantization/blob/main/docs/resultsImages/qat.png)
 
+While the model performance does end up decreasing with QAT, we see that it retains the performance of the model much better than PQT and only drops by around 5%.
+The inference speed on the other hand almost is increased by 2x for both models when applying QAT
+
+
+**************************************************************
+
+Model Storage with Quantization
+
 ![alt text](https://github.com/ramanodgers/HPML1bitquantization/blob/main/docs/resultsImages/storage.png)
+
+There is currently no datatype in native pytorch that can store below int8 precision. The datatype torch.quint4x2 is physically stored as int8 
+int2 or 1.58 storage would  require updated hardware and software. 
+
+
+**************************************************************
+
 
 
 
