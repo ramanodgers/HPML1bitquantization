@@ -32,7 +32,7 @@ def quantize_layer_weights(max, min, model: nn.Module, device, symmetric):
             module.weight.data = q_layer_data
             module.weight.scale = scale
             if (q_layer_data < min).any() or (q_layer_data > max).any():
-                raise Exception("Quantized weights of {} layer include values out of bounds for an 8-bit signed integer".format(name))
+                raise Exception("Quantized weights of {} layer include values out of bounds".format(name))
             if (q_layer_data != q_layer_data.round()).any():
                 raise Exception("Quantized weights of {} layer include non-integer values".format(name))
 

@@ -16,7 +16,7 @@ Project Goals:
 * PTQUtils - helper functions for Post-training Quantization
 * PTQ.py - main file to run Post-training Quantization with different CL options
 * quanteval.py - wrapper class that executes Post-training Quantization workflow, called by PTQ.py
-* 1bitquant.py - Deprecated file that implements Post Quantization Training methods 
+* 1bitquant.py - Deprecated file that implements Post Quantization Training methods ** do not use **
 * qat.py - Uses BitNet Architecture to implement Quantization Aware Training - trains models from scratch
 * bitlinear.py - Attempt to implementation of BitNet Archinecture
 

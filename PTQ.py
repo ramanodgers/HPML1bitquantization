@@ -9,33 +9,36 @@ import os
 parser = argparse.ArgumentParser(description="Quantization of Neural Network Models")
 parser.add_argument('--model_path', type=str, default='facebook/deit-tiny-patch16-224', 
                     help='what model to quantize')
-parser.add_argument('--imagenet', type=bool, default=True, 
+parser.add_argument('--imagenet', type=lambda x: (str(x).lower() == 'true'), default=False,
                     help='whether to use ImageNet or CIFAR')
-parser.add_argument('--freeze', type=bool, default=False, 
+parser.add_argument('--freeze', type=lambda x: (str(x).lower() == 'true'), default=False, 
                     help='whether to freeze model in training')
-parser.add_argument('--initial_train', type=bool, default=True, 
+parser.add_argument('--initial_train', type=lambda x: (str(x).lower() == 'true'), default=True, 
                     help='whether to train model before quantizing')
-parser.add_argument('--quantize_weight', type=bool, default=True, 
+parser.add_argument('--quantize_weight', type=lambda x: (str(x).lower() == 'true'), default=True, 
                     help='whether to quantize weights')
-parser.add_argument('--quantize_ab', type=bool, default=True, 
+parser.add_argument('--quantize_ab', type=lambda x: (str(x).lower() == 'true'), default=True, 
                     help='whether to quantize activations and biases')
-parser.add_argument('--range', type=str, default='ternary', choices=['ternary', 'int8'],
-                    help='which quantization to use')
-parser.add_argument('--symmetric', type=bool, default=False, 
+parser.add_argument('--symmetric', type=lambda x: (str(x).lower() == 'true'), default=False, 
                     help='asymmetric or symmetric quantization')
 
 workflow = parser.parse_args()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# MAX = 127
-# MIN = -128
 
 def main():
     '''wrapper file to run all PTQ methods. 
     Provides options in the argparse, passed to QuantEval engine 
+
+    possible models: 
+    WinKawaks/vit-small-patch16-224
+    nateraw/vit-base-patch16-224-cifar10
+    tzhao3/DeiT-CIFAR10
+    facebook/deit-tiny-patch16-224
     '''
+    print(workflow)
     model_name = workflow.model_path.split('/')[-1]
-    output_dir = os.path.join("./results/", model_name, workflow.range) + '/'
+    output_dir = os.path.join("./results/", model_name) + '/'
 
     training_args = TrainingArguments(
         output_dir=output_dir,
